@@ -1,17 +1,22 @@
-# Use the official Python image
+# Use an official Python runtime as a parent image
 FROM python:latest
 
-# Set the working directory
+# Set environment variables to prevent Python from writing .pyc files and buffering stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy project files
-COPY . /app
+# Copy requirements file and install dependencies
+COPY requirements.txt /app/
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Install dependencies
-RUN pip install flask
+# Copy the rest of the application code
+COPY . /app/
 
-# Expose port 5000
+# Expose the port that Flask runs on
 EXPOSE 5000
 
-# Run the application
+# Run the Flask app
 CMD ["python", "app.py"]

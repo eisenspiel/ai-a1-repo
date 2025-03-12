@@ -1,0 +1,140 @@
+/* Define CSS variables for theming */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --card-bg: #f5f5f5;
+  --input-bg: #ffffff;
+}
+
+/* Switch to dark theme if system prefers dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1a1a1a;
+    --text-color: #f0f0f0;
+    --card-bg: #242424;
+    --input-bg: #2a2a2a;
+  }
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Chat container now centers the chat and adds padding at the edges */
+.chat-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px 15px; /* horizontal padding */
+  padding-bottom: 70px; /* space for the fixed input area */
+  box-sizing: border-box;
+}
+
+/* Chat window spans full width of the container */
+.chat-window {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px - 20px); /* full viewport height minus fixed input area and top padding */
+  overflow: hidden;
+}
+
+/* Chat messages area stretches across the full container width */
+.chat-messages {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: var(--bg-color);
+}
+
+/* Message bubbles with constrained width and proper margins */
+.message-card {
+  background-color: var(--card-bg);
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  max-width: 80%;       /* constrain message bubble width */
+  word-wrap: break-word; /* ensure long words break properly */
+}
+
+.message-card.user {
+  margin-left: auto;    /* align bubble to the right */
+  margin-right: 15px;   /* gap from the right edge */
+  text-align: right;    /* align text inside the bubble to the right */
+}
+
+/* Fixed input area always at the bottom, spanning full width of the container */
+.input-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: var(--bg-color);
+  border-top: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* Input field styling that adapts to system theme */
+.input-area input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  outline: none;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+/* Circular send button with updated styling */
+.input-area button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+/* Typing/loading indicator: animated ellipsis only */
+.typing-indicator {
+  font-size: 1.2em;
+  margin-left: 10px;
+  visibility: hidden;
+}
+
+.typing-indicator::after {
+  content: '...';
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+@media (max-width: 600px) {
+  .chat-container {
+    padding: 5px;
+  }
+  .input-area {
+    padding: 10px 5px;
+  }
+}
