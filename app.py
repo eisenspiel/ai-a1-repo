@@ -128,7 +128,7 @@ def message():
 
         # Build history
         history = build_chathistory()
-        history.append({"role": "user", "content": user_message})
+        logging.info("Final chat history sent to GPT:\n%s", json.dumps(history, indent=2))
 
         # System instruction for combined response+summary
         system_prompt = (
@@ -143,6 +143,8 @@ def message():
         logging.info("Raw assistant reply for JSON parse:\n%s", assistant_reply)
 
         try:
+            if "{" not in assistant_reply or "}" not in assistant_reply:
+                raise ValueError("No JSON block found in assistant reply.")
             json_start = assistant_reply.index('{')
             json_content = assistant_reply[json_start:].strip()
             parsed = json.loads(json_content)
