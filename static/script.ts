@@ -4,9 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatMessages = document.getElementById('chat-messages') as HTMLElement;
   const typingIndicator = document.getElementById('typing-indicator') as HTMLElement;
 
+  // Auto-focus the input field on load
   userInput.focus();
 
-  function addMessage(sender: 'user' | 'bot', text: string): void {
+  // Define a type for the message sender
+  type Sender = 'user' | 'bot';
+
+  // Function to add a new message bubble to the chat window
+  function addMessage(sender: Sender, text: string): void {
     const messageCard = document.createElement('div');
     messageCard.classList.add('message-card', sender);
     messageCard.textContent = text;
@@ -17,8 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Define an interface for the API response
+  interface ApiResponse {
+    response?: string;
+    error?: string;
+  }
+
+  // Async function to send the message to the server and update the chat
   async function sendMessage(): Promise<void> {
-    const message = userInput.value.trim();
+    const message: string = userInput.value.trim();
     if (!message) return;
 
     addMessage('user', message);
@@ -33,15 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ message })
       });
 
-      const data = await response.json();
-      addMessage('bot', data.response || 'Error: No response');
-    } catch (error: any) {
-      addMessage('bot', 'Error: ' + error.message);
-    }
+      // Check if response is OK
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-    typingIndicator.style.visibility = 'hidden';
+      const data: ApiResponse = await response.json();
+      addMessage('bot', data.response ?? 'Error: No response');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        addMessage('bot', 'Error: ' + error.message);
+      } else {
+        addMessage('bot', 'An unexpected error occurred.');
+      }
+    } finally {
+      typingIndicator.style.visibility = 'hidden';
+    }
   }
 
+  // Event listeners for sending messages
   sendButton.addEventListener('click', sendMessage);
   userInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') sendMessage();

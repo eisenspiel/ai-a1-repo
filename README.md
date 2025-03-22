@@ -32,7 +32,7 @@ docker build -t ai_gpt_chat_img .
 
 ### 4. Run the Container
 ```bash
-docker run -p 5000:5000 --name ai_gpt_chat_container --env-file .env ai_gpt_chat_img
+docker run --rm -p 5000:5000 --name ai_gpt_chat_container --env-file .env ai_gpt_chat_img
 ```
 
 ### 5. Open in Browser
