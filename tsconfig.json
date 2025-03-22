@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "outDir": "static",
+    "rootDir": "static",
+    "strict": true,
+    "noEmitOnError": true
+  },
+  "include": ["static/**/*.ts"],
+  "exclude": ["static/**/*.js", "node_modules"]
+}  
