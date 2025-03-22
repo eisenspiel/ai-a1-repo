@@ -4,13 +4,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const chatMessages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing-indicator');
 
+  // Focus input field when page loads
+  userInput.focus();
+
   // Function to add a message to the chat display area
   function addMessage(sender, text) {
     const messageCard = document.createElement('div');
     messageCard.classList.add('message-card', sender);
     messageCard.textContent = text;
     chatMessages.appendChild(messageCard);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatMessages.scrollTo({
+      top: chatMessages.scrollHeight,
+      behavior: 'smooth'
+      
+    });
   }
 
   // Function to send a message and update the chat window
@@ -20,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addMessage('user', message);
     userInput.value = '';
     typingIndicator.style.visibility = 'visible';
+    userInput.focus();
 
     try {
       const response = await fetch('/api/message', {
