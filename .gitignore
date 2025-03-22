@@ -1,3 +1,4 @@
 .env
 static/script.js
 *.js.map
+data/chat.db

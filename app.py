@@ -4,8 +4,9 @@ import os
 import openai
 import sqlite3
 from datetime import datetime
+import json
 
-DB_PATH = "chat.db"
+DB_PATH = "data/chat.db"
 
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -21,7 +22,7 @@ def init_db():
         ''')
         conn.commit()
 
-def save_message(role: str, content: str, summary: str = None):
+def save_message(role: str, content: str, summary: str = None) -> int:
     timestamp = datetime.utcnow().isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -29,7 +30,9 @@ def save_message(role: str, content: str, summary: str = None):
             "INSERT INTO messages (timestamp, role, content, summary) VALUES (?, ?, ?, ?)",
             (timestamp, role, content, summary)
         )
+        message_id = cursor.lastrowid
         conn.commit()
+        return message_id
 
 def update_summary(message_id: int, summary: str):
     with sqlite3.connect(DB_PATH) as conn:
@@ -43,11 +46,7 @@ def update_summary(message_id: int, summary: str):
 def build_chathistory() -> list[dict]:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT role, content, summary
-            FROM messages
-            ORDER BY timestamp ASC
-        """)
+        cursor.execute("SELECT role, content, summary FROM messages ORDER BY timestamp ASC")
         all_messages = cursor.fetchall()
 
     # Separate recent full messages (last 4 user+assistant)
@@ -112,49 +111,53 @@ def message():
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
         
-        # Save user message to DB (no summary yet)
-        save_message("user", user_message)
-
-        # Get the ID of the last inserted message
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT last_insert_rowid()")
-            user_msg_id = cursor.fetchone()[0]
-
         # In-memory session management using Flask's session support
         session_id = session.get('session_id')
         if not session_id:
             session_id = os.urandom(16).hex()
             session['session_id'] = session_id
-        
-        # Summarize the user message
+
+        # Save user message
+        user_msg_id = save_message("user", user_message)
+
+        # Generate and store summary for user
         user_summary_prompt = f"Please summarize this user message in 1–2 sentences: '{user_message}'"
         user_summary = gpt4o_generate(user_summary_prompt)
-
-        # Update the user's message with the summary
+        logging.info("Generated user summary: %s", user_summary)
         update_summary(user_msg_id, user_summary)
 
-        # Generate bot response via the real GPT-4o integration
+        # Build history
         history = build_chathistory()
         history.append({"role": "user", "content": user_message})
-        response_text = gpt4o_generate(history)
-        # Save assistant message to DB (no summary yet)
-        save_message("assistant", response_text)
 
-        # Get the ID of the last inserted message
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT last_insert_rowid()")
-            assistant_msg_id = cursor.fetchone()[0]
+        # System instruction for combined response+summary
+        system_prompt = (
+            "You are a helpful assistant. Respond to the user's message as usual, "
+            "but return a JSON object with two fields: 'response' and 'summary'.\n\n"
+            "Respond using this format only:\n"
+            '{ "response": "...", "summary": "..." }'
+        )
+        history.insert(0, {"role": "system", "content": system_prompt})
 
-        # Summarize the assistant message
-        assistant_summary_prompt = f"Please summarize this assistant response in 1–2 sentences: '{response_text}'"
-        assistant_summary = gpt4o_generate(assistant_summary_prompt)
+        assistant_reply = gpt4o_generate(history)
+        logging.info("Raw assistant reply for JSON parse:\n%s", assistant_reply)
 
-        # Update the assistant's message with the summary
-        update_summary(assistant_msg_id, assistant_summary)
+        try:
+            json_start = assistant_reply.index('{')
+            json_content = assistant_reply[json_start:].strip()
+            parsed = json.loads(json_content)
+            response_text = parsed.get("response", "").strip()
+            assistant_summary = parsed.get("summary", "").strip()
+        except Exception as e:
+            response_text = assistant_reply.strip()
+            assistant_summary = "Summary unavailable (JSON parse failed)"
+            logging.error("Failed to parse assistant JSON: %s", e)
 
-        # Log the conversation to a file
+        logging.info("Parsed assistant summary: %s", assistant_summary)
+
+        assistant_msg_id = save_message("assistant", response_text, assistant_summary)
+        logging.info("Saving summary to DB: id=%s, summary=%s", assistant_msg_id, assistant_summary)
+
         logging.info("Session %s: user: %s", session_id, user_message)
         logging.info("Session %s: bot: %s", session_id, response_text)
 
