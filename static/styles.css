@@ -138,3 +138,62 @@ body {
     padding: 10px 5px;
   }
 }
+
+.chat-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 10px 15px;
+  max-width: 1000px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.savings-panel {
+  width: 200px;
+  background-color: var(--card-bg);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9em;
+  color: var(--text-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+/* Style update for new title and tooltip on hover */
+.savings-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 1em;
+  cursor: help;
+}
+
+/* Use system-theme monochrome colors for bar */
+.savings-bar-bg {
+  background-color: var(--card-bg);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.savings-bar-fill {
+  height: 8px;
+  background-color: var(--text-color);
+  transition: width 0.4s ease-in-out;
+}
+
+.savings-stats {
+  font-family: monospace;
+  line-height: 1.4;
+}
+
+.savings-hint {
+  font-size: 0.75em;
+  color: var(--text-color);
+  opacity: 0.5;
+  margin-bottom: 10px;
+  text-align: center;
+}

@@ -43,7 +43,7 @@ def update_summary(message_id: int, summary: str):
         )
         conn.commit()
 
-def build_chathistory() -> list[dict]:
+def build_chathistory_with_stats() -> dict:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT role, content, summary FROM messages ORDER BY timestamp ASC")
@@ -55,16 +55,31 @@ def build_chathistory() -> list[dict]:
     full_messages = all_messages[-full_count:]
     summary_messages = all_messages[:-full_count]
 
+    original_chars = 0
+    summarized_chars = 0
+
     # Use summaries for older messages
     for role, content, summary in summary_messages:
-        if summary:  # Only include if summary exists
+        original_chars += len(content)
+        if summary:
+            summarized_chars += len(summary)
             history.append({"role": role, "content": summary})
+        else:
+            summarized_chars += len(content)
+            history.append({"role": role, "content": content})  # fallback
 
     # Use full content for the latest 4
     for role, content, _ in full_messages:
+        original_chars += len(content)
+        summarized_chars += len(content)
         history.append({"role": role, "content": content})
 
-    return history
+    return {
+        "history": history,
+        "original_chars": original_chars,
+        "summarized_chars": summarized_chars
+    }
+
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'  # Use a secure key in production
@@ -126,8 +141,10 @@ def message():
         logging.info("Generated user summary: %s", user_summary)
         update_summary(user_msg_id, user_summary)
 
-        # Build history
-        history = build_chathistory()
+        # Build history and get char stats
+        chat_data = build_chathistory_with_stats()
+        history = chat_data["history"]
+
         logging.info("Final chat history sent to GPT:\n%s", json.dumps(history, indent=2))
 
         # System instruction for combined response+summary
@@ -163,7 +180,20 @@ def message():
         logging.info("Session %s: user: %s", session_id, user_message)
         logging.info("Session %s: bot: %s", session_id, response_text)
 
-        return jsonify({"response": response_text})
+        savings = {
+            "original_chars": chat_data["original_chars"],
+            "summarized_chars": chat_data["summarized_chars"],
+            "saved": chat_data["original_chars"] - chat_data["summarized_chars"],
+            "percentage": round(
+                (chat_data["original_chars"] - chat_data["summarized_chars"]) / chat_data["original_chars"] * 100, 1
+            ) if chat_data["original_chars"] else 0
+        }
+        return jsonify({
+            "response": response_text,
+            "summary": assistant_summary,
+            "savings": savings
+        })
+
     except Exception as e:
         logging.error("Error in /api/message: %s", e)
         return jsonify({"error": "An error occurred"}), 500
@@ -175,4 +205,25 @@ def index():
 init_db()
 
 if __name__ == '__main__':
+    @app.route('/api/stats', methods=['GET'])
+    def stats():
+        try:
+            chat_data = build_chathistory_with_stats()
+            original = chat_data["original_chars"]
+            summarized = chat_data["summarized_chars"]
+            saved = original - summarized
+            percentage = round((saved / original) * 100, 1) if original else 0
+
+            return jsonify({
+                "savings": {
+                    "original_chars": original,
+                    "summarized_chars": summarized,
+                    "saved": saved,
+                    "percentage": percentage
+                }
+            })
+        except Exception as e:
+            logging.error("Error in /api/stats: %s", e)
+            return jsonify({"error": "Unable to load stats"}), 500
+        
     app.run(host="0.0.0.0", debug=True)

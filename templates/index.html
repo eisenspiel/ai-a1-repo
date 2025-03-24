@@ -7,18 +7,32 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <div class="chat-container">
+  <div class="chat-layout">
     <div class="chat-window">
       <div class="chat-messages" id="chat-messages">
         <!-- Chat messages will appear here -->
+      </div>
+    </div>
+    <div class="savings-panel" id="savings-panel">
+      <div class="savings-title" title="This panel shows how many characters were saved by summarizing older messages instead of sending them in full. Lower bar = better compression.">
+        Summary Savings
+      </div>      
+      <div class="savings-bar-bg">
+        <div class="savings-bar-fill" id="savings-bar-fill"></div>
+      </div>
+      <div class="savings-hint">Lower is better</div>
+      <div class="savings-stats" id="savings-stats">
+        Original: 0<br>
+        Summarized: 0<br>
+        Saved: 0 (0%)
       </div>
     </div>
   </div>
   <div class="input-area">
     <input type="text" id="user-input" placeholder="Type your message...">
     <button id="send-button">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" 
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" 
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round"
            stroke-linejoin="round" width="24" height="24">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5,12 12,5 19,12"></polyline>

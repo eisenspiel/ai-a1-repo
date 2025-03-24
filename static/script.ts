@@ -26,6 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
   interface ApiResponse {
     response?: string;
     error?: string;
+    savings?: {
+      original_chars: number;
+      summarized_chars: number;
+      saved: number;
+      percentage: number;
+    };
   }
 
   // Async function to send the message to the server and update the chat
@@ -52,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data: ApiResponse = await response.json();
       addMessage('bot', data.response ?? 'Error: No response');
+      updateSavingsPanel(data.savings);
     } catch (error: unknown) {
       if (error instanceof Error) {
         addMessage('bot', 'Error: ' + error.message);
@@ -63,9 +70,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateSavingsPanel(savings: any): void {
+    const stats = document.getElementById("savings-stats");
+    const bar = document.getElementById("savings-bar-fill");
+  
+    if (stats && bar) {
+      const { original_chars, summarized_chars, saved } = savings;
+  
+      const summaryRatio = original_chars > 0
+        ? Math.round((summarized_chars / original_chars) * 100)
+        : 0;
+  
+      const savedPercentage = original_chars > 0
+        ? Math.round((saved / original_chars) * 100)
+        : 0;
+  
+      // Update visual bar (shows how much of memory is "used")
+      bar.style.width = `${summaryRatio}%`;
+  
+      // Show all 3 stats
+      stats.innerHTML = `
+        Original: ${original_chars}<br>
+        Summarized: ${summarized_chars}<br>
+        Saved: ${savedPercentage}%
+      `;
+    }
+  }
+  
+
   // Event listeners for sending messages
   sendButton.addEventListener('click', sendMessage);
   userInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') sendMessage();
   });
+
 });
